@@ -51,7 +51,7 @@ jobs:
         run: |
           dnf install -y dnf-plugins-core epel-release
           dnf config-manager --set-enabled crb
-          dnf install -y gcc-c++ make pkgconfig rpm-build gtk3-devel xfce4-panel-devel libcurl-devel 'pkgconfig(nlohmann_json)' tar
+          dnf install -y gcc-c++ make pkgconfig rpm-build gtk3-devel xfce4-panel-devel libcurl-devel 'pkgconfig(nlohmann_json)' tar git
 
       - name: Build .rpm and .src.rpm packages
         run: |
