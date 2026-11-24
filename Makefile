@@ -6,7 +6,8 @@ LDFLAGS = -shared $(shell pkg-config --libs libxfce4panel-2.0 gtk+-3.0 libcurl 2
 
 TARGET = libmyweather.so
 OBJS = register.o weather_plugin.o
-SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp)
+FONT_FILES = $(wildcard fonts/*.ttf fonts/*.TTF)
+SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp) $(FONT_FILES)
 
 PKG_NAME = xfce4-myweather-plugin
 GIT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
@@ -42,6 +43,7 @@ DESKTOP_DIR = /usr/share/xfce4/panel/plugins
 DESKTOP_FILE = myweather.desktop
 SYS_CONF_DIR = /etc/xdg
 SYS_CONF_FILE = $(SYS_CONF_DIR)/myweather.conf
+FONTS_DIR = /usr/share/fonts/truetype/myweather
 
 all: check_deps $(TARGET)
 
@@ -82,12 +84,17 @@ deb: check_deps $(TARGET)
 	mkdir -p $(DEB_DIR)$(DESKTOP_DIR)
 	mkdir -p $(DEB_DIR)$(SYS_CONF_DIR)
 	cp $(TARGET) $(DEB_DIR)$(PLUGIN_DIR)/
+	@if [ -n "$(FONT_FILES)" ]; then \
+		mkdir -p $(DEB_DIR)$(FONTS_DIR); \
+		install -m 0644 $(FONT_FILES) $(DEB_DIR)$(FONTS_DIR)/; \
+	fi
 	@printf "[Xfce Panel]\nType=X-XFCE-PanelPlugin\nName=Погода (Open-Meteo)\nComment=Прогноз погоды на 7 дней\nIcon=weather-clear\nX-XFCE-Module=myweather\nX-XFCE-Internal=FALSE\nX-XFCE-API=2.0\n" > $(DEB_DIR)$(DESKTOP_DIR)/$(DESKTOP_FILE)
 	@printf "lat=53.13\nlon=45.0\ntimezone=Europe%%2FMoscow\nfont_desc=Tahoma 10\npanel_font=Tahoma 8\npanel_color=#000000\nmax_tooltip_px=423\nupdate_interval=1800\noffset_x=-1\noffset_y=-3\n" > $(DEB_DIR)$(SYS_CONF_FILE)
 	@printf "$(SYS_CONF_FILE)\n" > $(DEB_DIR)/DEBIAN/conffiles
 	@printf "Package: $(PKG_NAME)\nVersion: $(PKG_VER)\nSection: xfce\nPriority: optional\nArchitecture: $(DEB_ARCH)\nDepends: xfce4-panel, libgtk-3-0 | libgtk-3-0t64, libcurl4 | libcurl4t64\nMaintainer: User <user@localhost>\nDescription: Xfce4 panel weather plugin using Open-Meteo API\n" > $(DEB_DIR)/DEBIAN/control
+	@printf "#!/bin/sh\ncommand -v fc-cache >/dev/null 2>&1 && fc-cache -f $(FONTS_DIR) || true\n" > $(DEB_DIR)/DEBIAN/postinst
 	@printf "#!/bin/sh\npkill -f 'wrapper-2.0.*myweather' || true\n" > $(DEB_DIR)/DEBIAN/prerm
-	@chmod 0755 $(DEB_DIR)/DEBIAN/prerm
+	@chmod 0755 $(DEB_DIR)/DEBIAN/postinst $(DEB_DIR)/DEBIAN/prerm
 	dpkg-deb --build --root-owner-group $(DEB_DIR) $(DEB_FILE)
 	rm -rf $(DEB_DIR)
 	@echo "Готово: $(DEB_FILE)"
@@ -114,8 +121,15 @@ mkdir -p %%{buildroot}$(PLUGIN_DIR)\n\
 mkdir -p %%{buildroot}$(DESKTOP_DIR)\n\
 mkdir -p %%{buildroot}$(SYS_CONF_DIR)\n\
 install -m 0755 $(abspath $(TARGET)) %%{buildroot}$(PLUGIN_DIR)/\n\
+if [ -n \"$(abspath $(FONT_FILES))\" ]; then\n\
+    mkdir -p %%{buildroot}$(FONTS_DIR)\n\
+    install -m 0644 $(abspath $(FONT_FILES)) %%{buildroot}$(FONTS_DIR)/\n\
+fi\n\
 printf '[Xfce Panel]\\nType=X-XFCE-PanelPlugin\\nName=Погода (Open-Meteo)\\nComment=Прогноз погоды на 7 дней\\nIcon=weather-clear\\nX-XFCE-Module=myweather\\nX-XFCE-Internal=FALSE\\nX-XFCE-API=2.0\\n' > %%{buildroot}$(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
 printf 'lat=53.13\\nlon=45.0\\ntimezone=Europe%%%%2FMoscow\\nfont_desc=Tahoma 10\\npanel_font=Tahoma 8\\npanel_color=#000000\\nmax_tooltip_px=423\\nupdate_interval=1800\\noffset_x=-1\\noffset_y=-3\\n' > %%{buildroot}$(SYS_CONF_FILE)\n\
+\n\
+%%post\n\
+command -v fc-cache >/dev/null 2>&1 && fc-cache -f $(FONTS_DIR) || true\n\
 \n\
 %%preun\n\
 if [ \$$1 -eq 0 ]; then\n\
@@ -125,7 +139,8 @@ fi\n\
 %%files\n\
 $(PLUGIN_DIR)/$(TARGET)\n\
 $(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
-%%config(noreplace) $(SYS_CONF_FILE)\n" > $(RPM_SPEC)
+%%config(noreplace) $(SYS_CONF_FILE)\n\
+$(if $(FONT_FILES),$(FONTS_DIR)/,)\n" > $(RPM_SPEC)
 	rpmbuild --define "_topdir $(RPM_DIR)" -bb $(RPM_SPEC)
 	cp $(RPM_DIR)/RPMS/$(RPM_ARCH)/$(RPM_FILE) .
 	rm -rf $(RPM_DIR)
@@ -165,6 +180,9 @@ Xfce4 panel weather plugin using Open-Meteo API.\n\
 %%install\n\
 make install DESTDIR=%%{buildroot} SUDO=\n\
 \n\
+%%post\n\
+command -v fc-cache >/dev/null 2>&1 && fc-cache -f $(FONTS_DIR) || true\n\
+\n\
 %%preun\n\
 if [ \$$1 -eq 0 ]; then\n\
     pkill -f 'wrapper-2.0.*myweather' || true\n\
@@ -173,7 +191,8 @@ fi\n\
 %%files\n\
 %%{_libdir}/xfce4/panel/plugins/$(TARGET)\n\
 $(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
-%%config(noreplace) $(SYS_CONF_FILE)\n" > $(RPM_SPEC)
+%%config(noreplace) $(SYS_CONF_FILE)\n\
+$(if $(FONT_FILES),$(FONTS_DIR)/,)\n" > $(RPM_SPEC)
 	rpmbuild --define "_topdir $(RPM_DIR)" -bs $(RPM_SPEC)
 	cp $(RPM_DIR)/SRPMS/$(SRPM_FILE) .
 	rm -rf $(RPM_DIR)
@@ -183,6 +202,13 @@ SUDO ?= sudo
 install: check_deps $(TARGET)
 	$(SUDO) mkdir -p $(DESTDIR)$(PLUGIN_DIR) $(DESTDIR)$(DESKTOP_DIR) $(DESTDIR)$(SYS_CONF_DIR)
 	$(SUDO) cp $(TARGET) $(DESTDIR)$(PLUGIN_DIR)/
+	@if [ -n "$(FONT_FILES)" ]; then \
+		$(SUDO) mkdir -p $(DESTDIR)$(FONTS_DIR); \
+		$(SUDO) install -m 0644 $(FONT_FILES) $(DESTDIR)$(FONTS_DIR)/; \
+		if [ -z "$(DESTDIR)" ]; then \
+			command -v fc-cache >/dev/null 2>&1 && $(SUDO) fc-cache -f $(FONTS_DIR) || true; \
+		fi; \
+	fi
 	@printf "[Xfce Panel]\nType=X-XFCE-PanelPlugin\nName=Погода (Open-Meteo)\nComment=Прогноз погоды на 7 дней\nIcon=weather-clear\nX-XFCE-Module=myweather\nX-XFCE-Internal=FALSE\nX-XFCE-API=2.0\n" | $(SUDO) tee $(DESTDIR)$(DESKTOP_DIR)/$(DESKTOP_FILE) > /dev/null
 	@if [ ! -f "$(DESTDIR)$(SYS_CONF_FILE)" ]; then \
 		printf "lat=53.13\nlon=45.0\ntimezone=Europe%%2FMoscow\nfont_desc=Tahoma 10\npanel_font=Tahoma 8\npanel_color=#000000\nmax_tooltip_px=423\nupdate_interval=1800\noffset_x=-1\noffset_y=-3\n" | $(SUDO) tee $(DESTDIR)$(SYS_CONF_FILE) > /dev/null; \
@@ -190,6 +216,8 @@ install: check_deps $(TARGET)
 
 uninstall:
 	sudo rm -f $(PLUGIN_DIR)/$(TARGET) $(DESKTOP_DIR)/$(DESKTOP_FILE)
+	sudo rm -rf $(FONTS_DIR)
+	@command -v fc-cache >/dev/null 2>&1 && sudo fc-cache -f || true
 	@echo "Примечание: конфигурационный файл $(SYS_CONF_FILE) сохранен. Для полного удаления выполните: make purge"
 
 purge: uninstall

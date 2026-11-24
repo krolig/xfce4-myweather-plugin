@@ -1,6 +1,8 @@
 *.o
 *.so
 *.deb
+*.rpm
 build_deb/
+build_rpm/
 .vscode/
 .idea/
