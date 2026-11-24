@@ -13,12 +13,19 @@
 
 ---
 
-## Установка из `.deb`-пакета (Debian / Ubuntu / Linux Mint)
+## Установка из готовых пакетов
 
-Скачайте готовый `.deb`-файл из раздела [Releases](../../releases) и установите его:
-```bash
-sudo apt install ./xfce4-myweather-plugin_*.deb
-```
+Скачайте подходящий пакет из раздела [Releases](../../releases) и установите его в зависимости от вашего дистрибутива:
+
+* **Debian / Ubuntu / Linux Mint (`.deb`):**
+  ```bash
+  sudo apt install ./xfce4-myweather-plugin_*.deb
+  ```
+* **РЕД ОС / Fedora / RHEL (`.rpm`):**
+  ```bash
+  sudo dnf install ./xfce4-myweather-plugin-*.rpm
+  ```
+
 После установки нажмите правой кнопкой мыши по панели Xfce -> **Панель** -> **Добавить новые элементы...** и выберите **Погода (Open-Meteo)**.
 
 ---
@@ -26,7 +33,7 @@ sudo apt install ./xfce4-myweather-plugin_*.deb
 ## Сборка из исходников
 
 ### 1. Установка зависимостей
-Поддерживаются Debian/Ubuntu (`apt`), Arch Linux (`pacman`) и Fedora (`dnf`):
+Поддерживаются Debian/Ubuntu (`apt`), РЕД ОС / Fedora (`dnf`) и Arch Linux (`pacman`):
 ```bash
 make deps
 ```
@@ -37,10 +44,24 @@ make
 sudo make install
 ```
 
-### 3. Сборка собственного `.deb`-пакета
-```bash
-make deb
-```
+### 3. Сборка пакетов (`.deb`, `.rpm`, `.src.rpm`)
+* Сборка `.deb`-пакета:
+  ```bash
+  make deb
+  ```
+* Сборка бинарного `.rpm`-пакета (адаптировано под РЕД ОС 7.3 / 8 и Fedora):
+  ```bash
+  make rpm
+  ```
+* Сборка исходного `.src.rpm`-пакета (SRPM) для чистой пересборки:
+  ```bash
+  make srpm
+  ```
+  Для пересборки бинарного RPM из `.src.rpm` на целевой системе:
+  ```bash
+  sudo dnf builddep ./xfce4-myweather-plugin-*.src.rpm
+  rpmbuild --rebuild ./xfce4-myweather-plugin-*.src.rpm
+  ```
 
 ---
 
@@ -58,13 +79,16 @@ make deb
 | `panel_color` | `#000000` | Цвет текста на панели (HEX) |
 | `max_tooltip_px` | `423` | Максимальная ширина всплывающего окна в пикселях |
 | `update_interval` | `1800` | Интервал обновления погоды в секундах (по умолчанию 30 мин) |
-| `offset_x` | `0` | Смещение всплывающего окна по горизонтали (px) |
+| `offset_x` | `-1` | Смещение всплывающего окна по горизонтали (px) |
 | `offset_y` | `-3` | Смещение всплывающего окна по вертикали (px) |
 
 ---
 
 ## Удаление
 
+Если плагин был установлен из пакета, удалите его через пакетный менеджер (`sudo apt remove xfce4-myweather-plugin` или `sudo dnf remove xfce4-myweather-plugin`).
+
+При ручной установке через `make install`:
 * Удалить плагин из системы (с сохранением настроек):
   ```bash
   sudo make uninstall
