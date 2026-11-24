@@ -10,8 +10,9 @@ FONT_FILES = $(wildcard fonts/*.ttf fonts/*.TTF)
 SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp) $(FONT_FILES)
 
 PKG_NAME = xfce4-myweather-plugin
-GIT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
-PKG_VER ?= $(if $(GIT_TAG),$(GIT_TAG),1.0.0)
+RAW_VER := $(or $(GITHUB_REF_NAME),$(shell git -c safe.directory='*' describe --tags --abbrev=0 2>/dev/null))
+CLEAN_VER := $(shell echo "$(RAW_VER)" | grep -E '^v?[0-9]' | sed 's/^v//')
+PKG_VER ?= $(if $(CLEAN_VER),$(CLEAN_VER),1.0.0)
 PKG_REL = 1
 
 # Суффикс дистрибутива (например, .el7 / .red8, если определен в системе)
