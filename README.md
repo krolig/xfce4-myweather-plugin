@@ -16,7 +16,7 @@
 
 ## Установка из готовых пакетов
 
-Скачайте подходящий пакет из раздела [Releases](../../releases) и установите его в зависимости от вашего дистрибутива:
+Скачайте подходящий пакет из раздела [Releases](https://github.com) и установите его в зависимости от вашего дистрибутива:
 
 * **Debian / Ubuntu / Linux Mint (`.deb`):**
   ```bash
@@ -24,7 +24,7 @@
   ```
 * **РЕД ОС / Fedora / RHEL (`.rpm`):**
   ```bash
-  sudo dnf install ./xfce4-myweather-plugin-*.rpm
+  sudo dnf install ./xfce4-myweather-plugin-*.x86_64.rpm
   ```
 
 После установки нажмите правой кнопкой мыши по панели Xfce -> **Панель** -> **Добавить новые элементы...** и выберите **Погода (Open-Meteo)**.
@@ -98,3 +98,9 @@ sudo make install
   ```bash
   sudo make purge
   ```
+
+---
+
+## Источники данных и лицензия
+
+* Погодные данные предоставлены [Open-Meteo.com](https://open-meteo.com) по лицензии [CC BY 4.0](https://creativecommons.org).

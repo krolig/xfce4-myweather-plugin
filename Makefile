@@ -7,7 +7,9 @@ LDFLAGS = -shared $(shell pkg-config --libs libxfce4panel-2.0 gtk+-3.0 libcurl 2
 TARGET = libmyweather.so
 OBJS = register.o weather_plugin.o
 FONT_FILES = $(wildcard fonts/*.ttf fonts/*.TTF)
-SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp) $(FONT_FILES)
+DOC_FILES = $(wildcard README.md)
+LIC_FILES = $(wildcard LICENSE)
+SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp) $(FONT_FILES) $(DOC_FILES) $(LIC_FILES)
 
 PKG_NAME = xfce4-myweather-plugin
 RAW_VER := $(or $(GITHUB_REF_NAME),$(shell git -c safe.directory='*' describe --tags --abbrev=0 2>/dev/null))
@@ -45,6 +47,7 @@ DESKTOP_FILE = myweather.desktop
 SYS_CONF_DIR = /etc/xdg
 SYS_CONF_FILE = $(SYS_CONF_DIR)/myweather.conf
 FONTS_DIR = /usr/share/fonts/truetype/myweather
+DOC_DIR = /usr/share/doc/$(PKG_NAME)
 
 all: check_deps $(TARGET)
 
@@ -89,6 +92,11 @@ deb: check_deps $(TARGET)
 		mkdir -p $(DEB_DIR)$(FONTS_DIR); \
 		install -m 0644 $(FONT_FILES) $(DEB_DIR)$(FONTS_DIR)/; \
 	fi
+	@if [ -n "$(LIC_FILES)" ] || [ -n "$(DOC_FILES)" ]; then \
+		mkdir -p $(DEB_DIR)$(DOC_DIR); \
+		[ -n "$(LIC_FILES)" ] && install -m 0644 $(LIC_FILES) $(DEB_DIR)$(DOC_DIR)/copyright || true; \
+		[ -n "$(DOC_FILES)" ] && install -m 0644 $(DOC_FILES) $(DEB_DIR)$(DOC_DIR)/ || true; \
+	fi
 	@printf "[Xfce Panel]\nType=X-XFCE-PanelPlugin\nName=Погода (Open-Meteo)\nComment=Прогноз погоды на 7 дней\nIcon=weather-clear\nX-XFCE-Module=myweather\nX-XFCE-Internal=FALSE\nX-XFCE-API=2.0\n" > $(DEB_DIR)$(DESKTOP_DIR)/$(DESKTOP_FILE)
 	@printf "lat=53.13\nlon=45.0\ntimezone=Europe%%2FMoscow\nfont_desc=Tahoma 10\npanel_font=Tahoma 8\npanel_color=#000000\nmax_tooltip_px=423\nupdate_interval=1800\noffset_x=-1\noffset_y=-3\n" > $(DEB_DIR)$(SYS_CONF_FILE)
 	@printf "$(SYS_CONF_FILE)\n" > $(DEB_DIR)/DEBIAN/conffiles
@@ -126,6 +134,14 @@ if [ -n \"$(abspath $(FONT_FILES))\" ]; then\n\
     mkdir -p %%{buildroot}$(FONTS_DIR)\n\
     install -m 0644 $(abspath $(FONT_FILES)) %%{buildroot}$(FONTS_DIR)/\n\
 fi\n\
+if [ -n \"$(abspath $(LIC_FILES))\" ]; then\n\
+    mkdir -p %%{buildroot}$(DOC_DIR)\n\
+    install -m 0644 $(abspath $(LIC_FILES)) %%{buildroot}$(DOC_DIR)/\n\
+fi\n\
+if [ -n \"$(abspath $(DOC_FILES))\" ]; then\n\
+    mkdir -p %%{buildroot}$(DOC_DIR)\n\
+    install -m 0644 $(abspath $(DOC_FILES)) %%{buildroot}$(DOC_DIR)/\n\
+fi\n\
 printf '[Xfce Panel]\\nType=X-XFCE-PanelPlugin\\nName=Погода (Open-Meteo)\\nComment=Прогноз погоды на 7 дней\\nIcon=weather-clear\\nX-XFCE-Module=myweather\\nX-XFCE-Internal=FALSE\\nX-XFCE-API=2.0\\n' > %%{buildroot}$(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
 printf 'lat=53.13\\nlon=45.0\\ntimezone=Europe%%%%2FMoscow\\nfont_desc=Tahoma 10\\npanel_font=Tahoma 8\\npanel_color=#000000\\nmax_tooltip_px=423\\nupdate_interval=1800\\noffset_x=-1\\noffset_y=-3\\n' > %%{buildroot}$(SYS_CONF_FILE)\n\
 \n\
@@ -141,7 +157,9 @@ fi\n\
 $(PLUGIN_DIR)/$(TARGET)\n\
 $(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
 %%config(noreplace) $(SYS_CONF_FILE)\n\
-$(if $(FONT_FILES),$(FONTS_DIR)/,)\n" > $(RPM_SPEC)
+$(if $(FONT_FILES),$(FONTS_DIR)/,)\n\
+$(if $(LIC_FILES),%%license $(DOC_DIR)/$(LIC_FILES),)\n\
+$(if $(DOC_FILES),%%doc $(DOC_DIR)/$(DOC_FILES),)\n" > $(RPM_SPEC)
 	rpmbuild --define "_topdir $(RPM_DIR)" -bb $(RPM_SPEC)
 	cp $(RPM_DIR)/RPMS/$(RPM_ARCH)/$(RPM_FILE) .
 	rm -rf $(RPM_DIR)
@@ -193,7 +211,9 @@ fi\n\
 %%{_libdir}/xfce4/panel/plugins/$(TARGET)\n\
 $(DESKTOP_DIR)/$(DESKTOP_FILE)\n\
 %%config(noreplace) $(SYS_CONF_FILE)\n\
-$(if $(FONT_FILES),$(FONTS_DIR)/,)\n" > $(RPM_SPEC)
+$(if $(FONT_FILES),$(FONTS_DIR)/,)\n\
+$(if $(LIC_FILES),%%license $(LIC_FILES),)\n\
+$(if $(DOC_FILES),%%doc $(DOC_FILES),)\n" > $(RPM_SPEC)
 	rpmbuild --define "_topdir $(RPM_DIR)" -bs $(RPM_SPEC)
 	cp $(RPM_DIR)/SRPMS/$(SRPM_FILE) .
 	rm -rf $(RPM_DIR)
@@ -216,13 +236,13 @@ install: check_deps $(TARGET)
 	fi
 
 uninstall:
-	sudo rm -f $(PLUGIN_DIR)/$(TARGET) $(DESKTOP_DIR)/$(DESKTOP_FILE)
-	sudo rm -rf $(FONTS_DIR)
-	@command -v fc-cache >/dev/null 2>&1 && sudo fc-cache -f || true
+	$(SUDO) rm -f $(PLUGIN_DIR)/$(TARGET) $(DESKTOP_DIR)/$(DESKTOP_FILE)
+	$(SUDO) rm -rf $(FONTS_DIR)
+	@command -v fc-cache >/dev/null 2>&1 && $(SUDO) fc-cache -f || true
 	@echo "Примечание: конфигурационный файл $(SYS_CONF_FILE) сохранен. Для полного удаления выполните: make purge"
 
 purge: uninstall
-	sudo rm -f $(SYS_CONF_FILE)
+	$(SUDO) rm -f $(SYS_CONF_FILE)
 
 clean:
 	rm -rf $(OBJS) $(TARGET) $(DEB_DIR) *.deb $(RPM_DIR) *.rpm
