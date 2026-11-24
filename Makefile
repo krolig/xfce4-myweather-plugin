@@ -9,7 +9,8 @@ OBJS = register.o weather_plugin.o
 SRC_FILES = Makefile register.c weather_plugin.cpp $(wildcard *.h *.hpp)
 
 PKG_NAME = xfce4-myweather-plugin
-PKG_VER = 1.0.0
+GIT_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+PKG_VER ?= $(if $(GIT_TAG),$(GIT_TAG),1.0.0)
 PKG_REL = 1
 
 # Суффикс дистрибутива (например, .el7 / .red8, если определен в системе)

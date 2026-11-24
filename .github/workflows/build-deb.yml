@@ -34,17 +34,19 @@ jobs:
           path: "*.deb"
 
   build-rpm:
-    name: Build RPM & SRPM (RED OS 8)
+    name: Build RPM & SRPM (EL9 / RED OS 8)
     runs-on: ubuntu-24.04
     container:
-      image: registry.red-soft.ru/redos/redos:8
+      image: almalinux:9
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Enable CRB & EPEL and install dependencies
         run: |
+          dnf install -y dnf-plugins-core epel-release
+          dnf config-manager --set-enabled crb
           dnf install -y gcc-c++ make pkgconfig rpm-build gtk3-devel xfce4-panel-devel libcurl-devel 'pkgconfig(nlohmann_json)' tar
 
       - name: Build .rpm and .src.rpm packages
